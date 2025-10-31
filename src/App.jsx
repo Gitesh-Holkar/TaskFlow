@@ -24,10 +24,22 @@ function TodoApp() {
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user && substrackReady) {
       fetchTodos();
       checkSubscription();
     }
+  }, [user, substrackReady]);
+
+  // Add a periodic check for subscription updates
+  useEffect(() => {
+    if (!user || !substrackReady) return;
+    
+    // Check subscription every 5 seconds
+    const interval = setInterval(() => {
+      checkSubscription();
+    }, 5000);
+    
+    return () => clearInterval(interval);
   }, [user, substrackReady]);
 
   const loadSubstrackSDK = () => {
@@ -78,13 +90,31 @@ function TodoApp() {
         // Check against known plan IDs
         if (planId === '1e4c6ca4-dfc1-4dae-9aa7-46cf8c1c6cd2') {
           console.log('Setting tier to: advanced');
-          setSubscriptionTier('advanced');
+          setSubscriptionTier(prev => {
+            if (prev !== 'advanced') {
+              console.log('Tier changed from', prev, 'to advanced');
+              return 'advanced';
+            }
+            return prev;
+          });
         } else if (planId === '6738763a-a3fd-43e9-869e-6d70cb1794d4') {
           console.log('Setting tier to: pro');
-          setSubscriptionTier('pro');
+          setSubscriptionTier(prev => {
+            if (prev !== 'pro') {
+              console.log('Tier changed from', prev, 'to pro');
+              return 'pro';
+            }
+            return prev;
+          });
         } else {
           console.log('Unknown plan ID:', planId, '- Setting to free');
-          setSubscriptionTier('free');
+          setSubscriptionTier(prev => {
+            if (prev !== 'free') {
+              console.log('Tier changed from', prev, 'to free');
+              return 'free';
+            }
+            return prev;
+          });
         }
       } else {
         console.log('No plan info found, setting to free');
@@ -153,9 +183,10 @@ function TodoApp() {
   };
 
   const getMaxTodos = () => {
-    if (subscriptionTier === 'advanced') return Infinity;
-    if (subscriptionTier === 'pro') return 6;
-    return 3;
+    const max = subscriptionTier === 'advanced' ? Infinity : 
+                subscriptionTier === 'pro' ? 6 : 3;
+    console.log('Current subscription tier:', subscriptionTier, '- Max todos:', max);
+    return max;
   };
 
   const addTodo = async () => {
@@ -287,6 +318,10 @@ function TodoApp() {
                 TaskFlow
               </h1>
               <p className="text-slate-600 text-xs sm:text-sm mt-1 break-all">{user.email}</p>
+              <p className="text-xs text-slate-400 mt-1">
+                Current Tier: <strong className="text-slate-600">{subscriptionTier.toUpperCase()}</strong> | 
+                Max Todos: <strong className="text-slate-600">{getMaxTodos() === Infinity ? '∞' : getMaxTodos()}</strong>
+              </p>
             </div>
             <button
               onClick={handleSignOut}
@@ -331,7 +366,7 @@ function TodoApp() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {subscriptionTier === 'free' && (
               <div
-                onClick={() => window.open('https://substrack-yags.vercel.app/subscribe/4f1a7252-2c54-4d84-aa82-2da6d6982867', '_blank')}
+                onClick={() => window.open(`https://substrack-yags.vercel.app/subscribe/4f1a7252-2c54-4d84-aa82-2da6d6982867?email=${encodeURIComponent(user.email)}`, '_blank')}
                 className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl p-4 sm:p-6 text-white hover:scale-[1.02] transform transition-all duration-300 shadow-xl cursor-pointer"
               >
                 <div className="flex items-center gap-2 mb-2 sm:mb-3">
@@ -345,7 +380,7 @@ function TodoApp() {
               </div>
             )}
             <div
-              onClick={() => window.open('https://substrack-yags.vercel.app/subscribe/2546ec44-5f74-4e31-86e9-63dd11e57599', '_blank')}
+              onClick={() => window.open(`https://substrack-yags.vercel.app/subscribe/2546ec44-5f74-4e31-86e9-63dd11e57599?email=${encodeURIComponent(user.email)}`, '_blank')}
               className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-6 text-white hover:scale-[1.02] transform transition-all duration-300 shadow-xl cursor-pointer"
             >
               <div className="flex items-center gap-2 mb-2 sm:mb-3">
