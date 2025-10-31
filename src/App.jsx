@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { CheckCircle2, Circle, Trash2, Plus, LogOut, Sparkles, Crown, Zap } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Plus, LogOut, Sparkles, Crown, Zap, RefreshCw } from 'lucide-react';
 
 const supabase = createClient(
   'https://ahexmbykasgvpfceumhs.supabase.co',
@@ -44,31 +44,50 @@ function TodoApp() {
   };
 
   const checkSubscription = async () => {
-    if (!substrackReady || !window.Substrack) return;
+    if (!substrackReady || !window.Substrack) {
+      console.log('Substrack not ready');
+      return;
+    }
 
     try {
       const substrack = new window.Substrack();
       await substrack.init();
       
-      const hasSubscription = substrack.hasSubscription();
+      console.log('Substrack initialized');
       
-      if (hasSubscription) {
-        const planDetails = substrack.getSubscription ? substrack.getSubscription() : null;
+      // Check if user has any subscription
+      const hasSubscription = substrack.hasSubscription();
+      console.log('Has subscription:', hasSubscription);
+      
+      if (!hasSubscription) {
+        console.log('No subscription found, setting to free');
+        setSubscriptionTier('free');
+        return;
+      }
+      
+      // Get subscriber info using the correct method
+      const subscriber = substrack.getSubscriber();
+      console.log('Subscriber info:', subscriber);
+      console.log('Subscriber plan:', subscriber?.plan);
+      console.log('Subscriber features:', subscriber?.features);
+      
+      if (subscriber && subscriber.plan) {
+        const planId = subscriber.plan;
+        console.log('Plan ID:', planId);
         
-        if (planDetails) {
-          const planId = planDetails.planId || planDetails.id;
-          
-          if (planId === '1e4c6ca4-dfc1-4dae-9aa7-46cf8c1c6cd2') {
-            setSubscriptionTier('advanced');
-          } else if (planId === '6738763a-a3fd-43e9-869e-6d70cb1794d4') {
-            setSubscriptionTier('pro');
-          } else {
-            setSubscriptionTier('pro');
-          }
-        } else {
+        // Check against known plan IDs
+        if (planId === '1e4c6ca4-dfc1-4dae-9aa7-46cf8c1c6cd2') {
+          console.log('Setting tier to: advanced');
+          setSubscriptionTier('advanced');
+        } else if (planId === '6738763a-a3fd-43e9-869e-6d70cb1794d4') {
+          console.log('Setting tier to: pro');
           setSubscriptionTier('pro');
+        } else {
+          console.log('Unknown plan ID:', planId, '- Setting to free');
+          setSubscriptionTier('free');
         }
       } else {
+        console.log('No plan info found, setting to free');
         setSubscriptionTier('free');
       }
     } catch (error) {
@@ -79,7 +98,15 @@ function TodoApp() {
 
   const checkUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    setUser(session?.user ?? null);
+    const currentUser = session?.user ?? null;
+    
+    // Clear todos if user changed or logged out
+    if (!currentUser || (user && user.id !== currentUser?.id)) {
+      setTodos([]);
+      setSubscriptionTier('free');
+    }
+    
+    setUser(currentUser);
     setLoading(false);
   };
 
@@ -289,6 +316,14 @@ function TodoApp() {
             <div className="px-3 sm:px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg font-semibold text-sm">
               {remainingTodos} todos remaining
             </div>
+            <button
+              onClick={checkSubscription}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold text-sm transition-colors"
+              title="Refresh subscription status"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
           </div>
         </div>
 
