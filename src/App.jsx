@@ -331,7 +331,7 @@ function TodoApp() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {subscriptionTier === 'free' && (
               <div
-                onClick={() => window.open('https://substrack-yags.vercel.app/subscribe/6738763a-a3fd-43e9-869e-6d70cb1794d4', '_blank')}
+                onClick={() => window.open('https://substrack-yags.vercel.app/subscribe/4f1a7252-2c54-4d84-aa82-2da6d6982867', '_blank')}
                 className="bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl p-4 sm:p-6 text-white hover:scale-[1.02] transform transition-all duration-300 shadow-xl cursor-pointer"
               >
                 <div className="flex items-center gap-2 mb-2 sm:mb-3">
@@ -345,7 +345,7 @@ function TodoApp() {
               </div>
             )}
             <div
-              onClick={() => window.open('https://substrack-yags.vercel.app/subscribe/1e4c6ca4-dfc1-4dae-9aa7-46cf8c1c6cd2', '_blank')}
+              onClick={() => window.open('https://substrack-yags.vercel.app/subscribe/2546ec44-5f74-4e31-86e9-63dd11e57599', '_blank')}
               className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-4 sm:p-6 text-white hover:scale-[1.02] transform transition-all duration-300 shadow-xl cursor-pointer"
             >
               <div className="flex items-center gap-2 mb-2 sm:mb-3">
