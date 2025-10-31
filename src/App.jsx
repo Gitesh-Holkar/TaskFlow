@@ -65,63 +65,48 @@ function TodoApp() {
       const substrack = new window.Substrack();
       await substrack.init();
       
-      console.log('Substrack initialized');
+      console.log('✅ Substrack initialized');
       
       // Check if user has any subscription
       const hasSubscription = substrack.hasSubscription();
-      console.log('Has subscription:', hasSubscription);
+      console.log('📋 Has subscription:', hasSubscription);
       
       if (!hasSubscription) {
-        console.log('No subscription found, setting to free');
+        console.log('❌ No subscription found, setting to free');
         setSubscriptionTier('free');
         return;
       }
       
       // Get subscriber info using the correct method
       const subscriber = substrack.getSubscriber();
-      console.log('Subscriber info:', subscriber);
-      console.log('Subscriber plan:', subscriber?.plan);
-      console.log('Subscriber features:', subscriber?.features);
+      console.log('👤 Subscriber info:', subscriber);
+      console.log('📦 Subscriber plan:', subscriber?.plan);
+      console.log('✨ Subscriber features:', subscriber?.features);
       
       if (subscriber && subscriber.plan) {
-        const planId = subscriber.plan;
-        console.log('Plan ID:', planId);
+        const plan = subscriber.plan;
+        console.log('🔍 Checking plan value:', plan);
         
-        // Check against known plan IDs
-        if (planId === '1e4c6ca4-dfc1-4dae-9aa7-46cf8c1c6cd2') {
-          console.log('Setting tier to: advanced');
-          setSubscriptionTier(prev => {
-            if (prev !== 'advanced') {
-              console.log('Tier changed from', prev, 'to advanced');
-              return 'advanced';
-            }
-            return prev;
-          });
-        } else if (planId === '6738763a-a3fd-43e9-869e-6d70cb1794d4') {
-          console.log('Setting tier to: pro');
-          setSubscriptionTier(prev => {
-            if (prev !== 'pro') {
-              console.log('Tier changed from', prev, 'to pro');
-              return 'pro';
-            }
-            return prev;
-          });
+        // Check against plan names (not UUIDs since SDK returns plan names)
+        const planLower = String(plan).toLowerCase().trim();
+        console.log('🔍 Plan lowercase:', planLower);
+        
+        if (planLower === 'advanced' || planLower === 'advanced plan' || plan === '2546ec44-5f74-4e31-86e9-63dd11e57599') {
+          console.log('👑 SETTING TIER TO: ADVANCED');
+          setSubscriptionTier('advanced');
+        } else if (planLower === 'pro' || planLower === 'pro plan' || plan === '4f1a7252-2c54-4d84-aa82-2da6d6982867') {
+          console.log('⚡ SETTING TIER TO: PRO');
+          setSubscriptionTier('pro');
         } else {
-          console.log('Unknown plan ID:', planId, '- Setting to free');
-          setSubscriptionTier(prev => {
-            if (prev !== 'free') {
-              console.log('Tier changed from', prev, 'to free');
-              return 'free';
-            }
-            return prev;
-          });
+          console.log('❓ Unknown plan:', plan, '- Setting to free');
+          setSubscriptionTier('free');
         }
       } else {
-        console.log('No plan info found, setting to free');
+        console.log('❌ No plan info found, setting to free');
         setSubscriptionTier('free');
       }
     } catch (error) {
-      console.error('Subscription check error:', error);
+      console.error('❌ Subscription check error:', error);
       setSubscriptionTier('free');
     }
   };
@@ -185,7 +170,7 @@ function TodoApp() {
   const getMaxTodos = () => {
     const max = subscriptionTier === 'advanced' ? Infinity : 
                 subscriptionTier === 'pro' ? 6 : 3;
-    console.log('Current subscription tier:', subscriptionTier, '- Max todos:', max);
+    console.log('📊 Current subscription tier:', subscriptionTier, '- Max todos:', max);
     return max;
   };
 
@@ -320,7 +305,7 @@ function TodoApp() {
               <p className="text-slate-600 text-xs sm:text-sm mt-1 break-all">{user.email}</p>
               <p className="text-xs text-slate-400 mt-1">
                 Current Tier: <strong className="text-slate-600">{subscriptionTier.toUpperCase()}</strong> | 
-                Max Todos: <strong className="text-slate-600">{getMaxTodos() === Infinity ? '∞' : getMaxTodos()}</strong>
+                Max Todos: <strong className="text-slate-600">{maxTodos === Infinity ? '∞' : maxTodos}</strong>
               </p>
             </div>
             <button
