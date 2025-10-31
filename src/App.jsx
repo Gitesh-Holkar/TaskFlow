@@ -77,24 +77,23 @@ function TodoApp() {
         return;
       }
       
-      // Get subscriber info using the correct method
+      // Get subscriber info
       const subscriber = substrack.getSubscriber();
       console.log('👤 Subscriber info:', subscriber);
       console.log('📦 Subscriber plan:', subscriber?.plan);
-      console.log('✨ Subscriber features:', subscriber?.features);
       
       if (subscriber && subscriber.plan) {
         const plan = subscriber.plan;
         console.log('🔍 Checking plan value:', plan);
         
-        // Check against plan names (not UUIDs since SDK returns plan names)
+        // Check against plan names - simplified logic
         const planLower = String(plan).toLowerCase().trim();
         console.log('🔍 Plan lowercase:', planLower);
         
-        if (planLower === 'advanced' || planLower === 'advanced plan' || plan === '2546ec44-5f74-4e31-86e9-63dd11e57599') {
+        if (planLower.includes('advanced')) {
           console.log('👑 SETTING TIER TO: ADVANCED');
           setSubscriptionTier('advanced');
-        } else if (planLower === 'pro' || planLower === 'pro plan' || plan === '4f1a7252-2c54-4d84-aa82-2da6d6982867') {
+        } else if (planLower.includes('pro')) {
           console.log('⚡ SETTING TIER TO: PRO');
           setSubscriptionTier('pro');
         } else {
