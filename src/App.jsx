@@ -56,8 +56,8 @@ function TodoApp() {
   };
 
   const checkSubscription = async () => {
-    if (!substrackReady || !window.Substrack) {
-      console.log('Substrack not ready');
+    if (!substrackReady || !window.Substrack || !user) {
+      console.log('Substrack not ready or no user');
       return;
     }
 
@@ -81,6 +81,15 @@ function TodoApp() {
       const subscriber = substrack.getSubscriber();
       console.log('👤 Subscriber info:', subscriber);
       console.log('📦 Subscriber plan:', subscriber?.plan);
+      console.log('📧 Subscriber email:', subscriber?.email);
+      console.log('📧 Current user email:', user?.email);
+      
+      // IMPORTANT: Verify the subscription belongs to the current user
+      if (subscriber && subscriber.email && subscriber.email.toLowerCase() !== user.email.toLowerCase()) {
+        console.log('⚠️ Subscription email mismatch! Clearing old subscription data.');
+        setSubscriptionTier('free');
+        return;
+      }
       
       if (subscriber && subscriber.plan) {
         const plan = subscriber.plan;
