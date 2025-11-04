@@ -7,6 +7,9 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoZXhtYnlrYXNndnBmY2V1bWhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2NzE5MTIsImV4cCI6MjA3NzI0NzkxMn0.WhSlUYUktgSXQudt5PLrckxGCP-nzUeYgGKj90zAFRk'
 );
 
+// Your Merchant ID
+const MERCHANT_ID = 'c235b4de-fc50-4f54-8747-4e9afe791399';
+
 function TodoApp() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,6 +20,7 @@ function TodoApp() {
   const [newTodo, setNewTodo] = useState('');
   const [subscriptionTier, setSubscriptionTier] = useState('free');
   const [substrackReady, setSubstrackReady] = useState(false);
+  const [checkingSubscription, setCheckingSubscription] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -30,14 +34,13 @@ function TodoApp() {
     }
   }, [user, substrackReady]);
 
-  // Add a periodic check for subscription updates
+  // Periodic subscription check (every 10 seconds)
   useEffect(() => {
     if (!user || !substrackReady) return;
     
-    // Check subscription every 5 seconds
     const interval = setInterval(() => {
       checkSubscription();
-    }, 5000);
+    }, 10000); // Check every 10 seconds
     
     return () => clearInterval(interval);
   }, [user, substrackReady]);
@@ -50,29 +53,43 @@ function TodoApp() {
 
     const script = document.createElement('script');
     script.src = 'https://substrack-yags.vercel.app/substrack-sdk.js';
-    script.onload = () => setSubstrackReady(true);
-    script.onerror = () => console.error('Failed to load Substrack SDK');
+    script.onload = () => {
+      console.log('✅ Substrack SDK loaded');
+      setSubstrackReady(true);
+    };
+    script.onerror = () => console.error('❌ Failed to load Substrack SDK');
     document.head.appendChild(script);
   };
 
   const checkSubscription = async () => {
-    if (!substrackReady || !window.Substrack || !user) {
-      console.log('Substrack not ready or no user');
+    if (!substrackReady || !window.Substrack || !user?.email) {
+      console.log('⚠️ Substrack not ready or no user email');
       return;
     }
 
+    if (checkingSubscription) {
+      console.log('⏳ Already checking subscription, skipping...');
+      return;
+    }
+
+    setCheckingSubscription(true);
+
     try {
+      console.log('🔍 Checking subscription for:', user.email);
+      
+      // Initialize SDK with Merchant ID
       const substrack = new window.Substrack();
-      await substrack.init();
+      await substrack.init(MERCHANT_ID);
       
-      console.log('✅ Substrack initialized');
+      console.log('✅ Substrack initialized with Merchant ID:', MERCHANT_ID);
       
-      // Check if user has any subscription
-      const hasSubscription = substrack.hasSubscription();
+      // Check subscription using email (NEW EMAIL-BASED METHOD)
+      const hasSubscription = await substrack.checkSubscription(user.email);
+      
       console.log('📋 Has subscription:', hasSubscription);
       
       if (!hasSubscription) {
-        console.log('❌ No subscription found, setting to free');
+        console.log('❌ No active subscription found - Setting to FREE');
         setSubscriptionTier('free');
         return;
       }
@@ -80,42 +97,33 @@ function TodoApp() {
       // Get subscriber info
       const subscriber = substrack.getSubscriber();
       console.log('👤 Subscriber info:', subscriber);
-      console.log('📦 Subscriber plan:', subscriber?.plan);
-      console.log('📧 Subscriber email:', subscriber?.email);
-      console.log('📧 Current user email:', user?.email);
-      
-      // IMPORTANT: Verify the subscription belongs to the current user
-      if (subscriber && subscriber.email && subscriber.email.toLowerCase() !== user.email.toLowerCase()) {
-        console.log('⚠️ Subscription email mismatch! Clearing old subscription data.');
-        setSubscriptionTier('free');
-        return;
-      }
+      console.log('📦 Plan:', subscriber?.plan);
+      console.log('📊 Status:', subscriber?.status);
+      console.log('✨ Features:', subscriber?.features);
       
       if (subscriber && subscriber.plan) {
-        const plan = subscriber.plan;
-        console.log('🔍 Checking plan value:', plan);
+        const planName = String(subscriber.plan).toLowerCase().trim();
+        console.log('🔍 Plan name (lowercase):', planName);
         
-        // Check against plan names - simplified logic
-        const planLower = String(plan).toLowerCase().trim();
-        console.log('🔍 Plan lowercase:', planLower);
-        
-        if (planLower.includes('advanced')) {
+        if (planName.includes('advanced')) {
           console.log('👑 SETTING TIER TO: ADVANCED');
           setSubscriptionTier('advanced');
-        } else if (planLower.includes('pro')) {
+        } else if (planName.includes('pro')) {
           console.log('⚡ SETTING TIER TO: PRO');
           setSubscriptionTier('pro');
         } else {
-          console.log('❓ Unknown plan:', plan, '- Setting to free');
+          console.log('❓ Unknown plan, setting to free');
           setSubscriptionTier('free');
         }
       } else {
-        console.log('❌ No plan info found, setting to free');
+        console.log('❌ No plan info, setting to free');
         setSubscriptionTier('free');
       }
     } catch (error) {
       console.error('❌ Subscription check error:', error);
       setSubscriptionTier('free');
+    } finally {
+      setCheckingSubscription(false);
     }
   };
 
@@ -178,7 +186,7 @@ function TodoApp() {
   const getMaxTodos = () => {
     const max = subscriptionTier === 'advanced' ? Infinity : 
                 subscriptionTier === 'pro' ? 6 : 3;
-    console.log('📊 Current subscription tier:', subscriptionTier, '- Max todos:', max);
+    console.log('📊 Current tier:', subscriptionTier, '- Max todos:', max);
     return max;
   };
 
@@ -304,6 +312,7 @@ function TodoApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-3 sm:p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
+        {/* Header Card */}
         <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
             <div className="flex-1">
@@ -346,15 +355,17 @@ function TodoApp() {
             </div>
             <button
               onClick={checkSubscription}
-              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold text-sm transition-colors"
+              disabled={checkingSubscription}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold text-sm transition-colors disabled:opacity-50"
               title="Refresh subscription status"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Refresh</span>
+              <RefreshCw className={`w-4 h-4 ${checkingSubscription ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{checkingSubscription ? 'Checking...' : 'Refresh'}</span>
             </button>
           </div>
         </div>
 
+        {/* Upgrade Cards */}
         {subscriptionTier !== 'advanced' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
             {subscriptionTier === 'free' && (
@@ -388,6 +399,7 @@ function TodoApp() {
           </div>
         )}
 
+        {/* Add Todo Input */}
         <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <input
@@ -408,6 +420,7 @@ function TodoApp() {
           </div>
         </div>
 
+        {/* Todo List */}
         <div className="space-y-2 sm:space-y-3">
           {todos.map((todo, index) => (
             <div
@@ -442,6 +455,7 @@ function TodoApp() {
           ))}
         </div>
 
+        {/* Empty State */}
         {todos.length === 0 && (
           <div className="bg-white rounded-2xl shadow-xl p-8 sm:p-12 text-center">
             <Sparkles className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-emerald-500 mb-4 animate-pulse" />
